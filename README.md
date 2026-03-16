@@ -49,6 +49,26 @@ request.httpMethod = "POST"
 let signedRequest = try signer.sign(request)
 ```
 
+### Important: `@authority` Component
+
+The `@authority` component in the signature base is derived from the request URL. When verifying on the server, **do not use the `Host` header from the incoming request** — reverse proxies (nginx, ALB, CloudFront) commonly rewrite the `Host` header to the internal upstream hostname.
+
+Instead, use a **server-side environment constant** for the expected authority:
+
+```javascript
+// Node.js server — CORRECT
+const AUTHORITY = `${HOST}.${DOMAIN}` // e.g. "wallet.hello.coop"
+
+// In signature base construction:
+case '@authority':
+    value = AUTHORITY  // NOT req.headers.host
+```
+
+```swift
+// Swift client — the URL already contains the correct authority
+// No special handling needed; URLRequest.url.host() is used automatically
+```
+
 ### Verifying a Request
 
 ```swift

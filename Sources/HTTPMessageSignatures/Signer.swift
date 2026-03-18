@@ -39,6 +39,8 @@ public struct HTTPMessageSigner {
         case hwk
         /// JWT with cnf.jwk (caller provides the JWT string).
         case jwt(String)
+        /// Self-issued key delegation JWT (caller provides the JWT string).
+        case jktJWT(String)
         /// JWKS URI discovery (caller provides the URI parameters).
         case jwksURI(id: String, wellKnown: String?, kid: String?)
     }
@@ -117,6 +119,8 @@ public struct HTTPMessageSigner {
             return .hwk(HWKScheme(jwk: key.publicKeyJWK))
         case .jwt(let jwtString):
             return .jwt(JWTScheme(jwt: jwtString))
+        case .jktJWT(let jwtString):
+            return .jktJWT(JKTJWTScheme(jwt: jwtString))
         case .jwksURI(let id, let wellKnown, let kid):
             return .jwksURI(JWKSURIScheme(id: id, wellKnown: wellKnown, kid: kid))
         }

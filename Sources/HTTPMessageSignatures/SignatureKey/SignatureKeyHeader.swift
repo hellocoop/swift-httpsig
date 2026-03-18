@@ -11,6 +11,7 @@ import Foundation
 public enum SignatureKeyValue: Equatable, Sendable {
     case hwk(HWKScheme)
     case jwt(JWTScheme)
+    case jktJWT(JKTJWTScheme)
     case jwksURI(JWKSURIScheme)
 
     /// Parse a Signature-Key header value string.
@@ -41,6 +42,9 @@ public enum SignatureKeyValue: Equatable, Sendable {
         case "jwt":
             let jwt = try JWTScheme.parse(params: paramsString)
             return (label, .jwt(jwt))
+        case "jkt-jwt":
+            let jktJWT = try JKTJWTScheme.parse(params: paramsString)
+            return (label, .jktJWT(jktJWT))
         case "jwks_uri":
             let jwksURI = try JWKSURIScheme.parse(params: paramsString)
             return (label, .jwksURI(jwksURI))
@@ -56,6 +60,8 @@ public enum SignatureKeyValue: Equatable, Sendable {
             return "\(label)=\(hwk.serialize())"
         case .jwt(let jwt):
             return "\(label)=\(jwt.serialize())"
+        case .jktJWT(let jktJWT):
+            return "\(label)=\(jktJWT.serialize())"
         case .jwksURI(let jwksURI):
             return "\(label)=\(jwksURI.serialize())"
         }
@@ -71,6 +77,8 @@ public enum SignatureKeyValue: Equatable, Sendable {
             return hwk.toJWKParameters()
         case .jwt(let jwt):
             return try jwt.extractJWK()
+        case .jktJWT(let jktJWT):
+            return try jktJWT.extractJWK()
         case .jwksURI:
             return nil
         }

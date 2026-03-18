@@ -10,14 +10,24 @@ public enum JWKThumbprint {
         case missingYCoordinate
     }
 
-    /// Compute the SHA-256 thumbprint of a JWK per RFC 7638.
+    /// Hash algorithm for thumbprint computation.
+    public enum HashAlgorithm {
+        case sha256
+        case sha512
+    }
+
+    /// Compute the thumbprint of a JWK per RFC 7638.
     ///
-    /// The thumbprint is the base64url-encoded SHA-256 hash of the canonical
+    /// The thumbprint is the base64url-encoded hash of the canonical
     /// JSON representation of the JWK's required members, sorted lexicographically.
     ///
     /// For EC keys: `{"crv":"...","kty":"EC","x":"...","y":"..."}`
     /// For OKP keys: `{"crv":"...","kty":"OKP","x":"..."}`
-    public static func compute(_ jwk: JWKParameters) throws -> String {
+    ///
+    /// - Parameters:
+    ///   - jwk: The JWK to compute the thumbprint for.
+    ///   - algorithm: The hash algorithm to use (default: SHA-256).
+    public static func compute(_ jwk: JWKParameters, algorithm: HashAlgorithm = .sha256) throws -> String {
         let canonicalJSON: String
 
         switch jwk.kty {
@@ -41,8 +51,15 @@ public enum JWKThumbprint {
         }
 
         let data = Data(canonicalJSON.utf8)
-        let hash = SHA256.hash(data: data)
-        return Base64URL.encode(Data(hash))
+
+        switch algorithm {
+        case .sha256:
+            let hash = SHA256.hash(data: data)
+            return Base64URL.encode(Data(hash))
+        case .sha512:
+            let hash = SHA512.hash(data: data)
+            return Base64URL.encode(Data(hash))
+        }
     }
 }
 

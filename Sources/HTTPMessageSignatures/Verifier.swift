@@ -31,6 +31,9 @@ public struct HTTPMessageVerifier {
 
         /// The covered component identifiers.
         public let components: [String]
+
+        /// JKT-JWT verification details (only present when keyType is jkt-jwt).
+        public let jktJWT: JKTJWTScheme.VerificationResult?
     }
 
     /// Errors during signature verification.
@@ -75,8 +78,19 @@ public struct HTTPMessageVerifier {
         }
 
         // 4. Extract the public key from the Signature-Key header
-        guard let jwk = try sigKeyValue.jwkParameters() else {
-            throw Error.publicKeyExtractionFailed
+        let jwk: JWKParameters
+        var jktJWTResult: JKTJWTScheme.VerificationResult? = nil
+
+        if case .jktJWT(let jktJWT) = sigKeyValue {
+            // For jkt-jwt, perform full JWT verification and use the ephemeral key
+            let result = try jktJWT.verify()
+            jwk = result.ephemeralKey
+            jktJWTResult = result
+        } else {
+            guard let extractedJWK = try sigKeyValue.jwkParameters() else {
+                throw Error.publicKeyExtractionFailed
+            }
+            jwk = extractedJWK
         }
 
         // 5. Reconstruct the signature base
@@ -103,7 +117,8 @@ public struct HTTPMessageVerifier {
             jwk: jwk,
             signatureKeyValue: sigKeyValue,
             parameters: sigInput.parameters,
-            components: sigInput.components
+            components: sigInput.components,
+            jktJWT: jktJWTResult
         )
     }
 

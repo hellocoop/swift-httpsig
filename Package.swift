@@ -23,5 +23,10 @@ let package = Package(
             name: "HTTPMessageSignaturesTests",
             dependencies: ["HTTPMessageSignatures"]
         ),
+        .executableTarget(
+            name: "CrossTest",
+            dependencies: ["HTTPMessageSignatures"],
+            path: "Sources/CrossTest"
+        ),
     ]
 )

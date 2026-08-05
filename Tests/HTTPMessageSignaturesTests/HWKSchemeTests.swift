@@ -49,14 +49,14 @@ final class HWKSchemeTests: XCTestCase {
         let hwk = HWKScheme(kty: "EC", crv: "P-256", x: "abc123", y: "def456")
         let serialized = hwk.serialize()
 
-        XCTAssertEqual(serialized, "hwk;kty=\"EC\";crv=\"P-256\";x=\"abc123\";y=\"def456\"")
+        XCTAssertEqual(serialized, "hwk;alg=\"ES256\";kty=\"EC\";crv=\"P-256\";x=\"abc123\";y=\"def456\"")
     }
 
     func testSerializeOKP() {
         let hwk = HWKScheme(kty: "OKP", crv: "Ed25519", x: "abc123")
         let serialized = hwk.serialize()
 
-        XCTAssertEqual(serialized, "hwk;kty=\"OKP\";crv=\"Ed25519\";x=\"abc123\"")
+        XCTAssertEqual(serialized, "hwk;alg=\"Ed25519\";kty=\"OKP\";crv=\"Ed25519\";x=\"abc123\"")
         XCTAssertFalse(serialized.contains(";y="))
     }
 
@@ -78,10 +78,18 @@ final class HWKSchemeTests: XCTestCase {
         XCTAssertEqual(parsedHWK.y, "testY")
     }
 
-    func testNoAlgInSerialized() {
+    func testAlgIsSerialized() {
+        // alg was forbidden through -07 and is REQUIRED as of -08: the
+        // algorithm comes from the key, not from Signature-Input.
         let hwk = HWKScheme(kty: "EC", crv: "P-256", x: "x", y: "y")
-        let serialized = hwk.serialize()
-        XCTAssertFalse(serialized.contains("alg"))
+        XCTAssertEqual(hwk.alg, "ES256")
+        XCTAssertTrue(hwk.serialize().contains("alg=\"ES256\""))
+    }
+
+    func testAlgRoundTripsThroughParse() throws {
+        let serialized = HWKScheme(kty: "OKP", crv: "Ed25519", x: "x").serialize()
+        let parsed = try HWKScheme.parse(params: String(serialized.dropFirst("hwk;".count)))
+        XCTAssertEqual(parsed.alg, "Ed25519")
     }
 
     func testJWKParametersRoundTrip() {

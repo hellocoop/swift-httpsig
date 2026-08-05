@@ -4,20 +4,25 @@ import Foundation
 ///
 /// Carries JWK parameters inline as structured field parameters:
 ///
-///     sig=hwk;kty="EC";crv="P-256";x="base64url...";y="base64url..."
+///     sig=hwk;alg="ES256";kty="EC";crv="P-256";x="base64url...";y="base64url..."
 ///
-/// The `alg` parameter MUST NOT be present (algorithm is in Signature-Input).
+/// `alg` is REQUIRED as of draft-hardt-httpbis-signature-key-08 and carries the
+/// algorithm; it was forbidden through -07. It is emitted here and accepted but
+/// not yet required on parse, so a 1.2 verifier still reads keys from signers
+/// that have not been updated.
 public struct HWKScheme: Equatable, Sendable {
     public let kty: String
     public let crv: String
     public let x: String
     public let y: String?  // nil for OKP keys
+    public let alg: String?
 
-    public init(kty: String, crv: String, x: String, y: String? = nil) {
+    public init(kty: String, crv: String, x: String, y: String? = nil, alg: String? = nil) {
         self.kty = kty
         self.crv = crv
         self.x = x
         self.y = y
+        self.alg = alg ?? AlgorithmDetermination.derived(kty: kty, crv: crv)
     }
 
     /// Create from JWK parameters.
@@ -26,11 +31,12 @@ public struct HWKScheme: Equatable, Sendable {
         self.crv = jwk.crv
         self.x = jwk.x
         self.y = jwk.y
+        self.alg = jwk.alg ?? AlgorithmDetermination.derived(kty: jwk.kty, crv: jwk.crv)
     }
 
     /// Convert to JWK parameters.
     public func toJWKParameters() -> JWKParameters {
-        JWKParameters(kty: kty, crv: crv, x: x, y: y)
+        JWKParameters(kty: kty, crv: crv, x: x, y: y, alg: alg)
     }
 
     /// Parse hwk parameters from a semicolon-delimited parameter string.
@@ -56,12 +62,15 @@ public struct HWKScheme: Equatable, Sendable {
             throw SignatureKeyError.missingParameter("y")
         }
 
-        return HWKScheme(kty: kty, crv: crv, x: x, y: y)
+        return HWKScheme(kty: kty, crv: crv, x: x, y: y, alg: dict["alg"])
     }
 
     /// Serialize to the Signature-Key header value (after the label=).
     func serialize() -> String {
         var parts = ["hwk"]
+        if let alg = alg {
+            parts.append("alg=\"\(alg)\"")
+        }
         parts.append("kty=\"\(kty)\"")
         parts.append("crv=\"\(crv)\"")
         parts.append("x=\"\(x)\"")

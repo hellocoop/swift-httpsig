@@ -203,8 +203,8 @@ final class SignerVerifierTests: XCTestCase {
         XCTAssertTrue(skHeader.contains("crv=\"P-256\""))
         XCTAssertTrue(skHeader.contains("x=\""))
         XCTAssertTrue(skHeader.contains("y=\""))
-        // alg must NOT be present
-        XCTAssertFalse(skHeader.contains("alg="))
+        // alg is REQUIRED as of -08; it was forbidden through -07
+        XCTAssertTrue(skHeader.contains("alg=\"Ed25519\"") || skHeader.contains("alg=\"ES256\""))
     }
 
     // MARK: - Signature-Key Not Covered Error

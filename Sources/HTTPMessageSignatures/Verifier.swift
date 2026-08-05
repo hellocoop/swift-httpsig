@@ -128,13 +128,18 @@ public struct HTTPMessageVerifier {
         base data: Data,
         jwk: JWKParameters
     ) throws -> Bool {
-        switch (jwk.kty, jwk.crv) {
-        case ("EC", "P-256"):
+        // The algorithm comes from the key. Where the JWK carries alg it is
+        // authoritative and is checked against kty and crv; where it does not,
+        // it is derived, which is unambiguous for the key types supported here.
+        let algorithm = try AlgorithmDetermination.determine(jwk)
+
+        switch algorithm {
+        case "ES256":
             return try verifyES256(signature: signature, data: data, jwk: jwk)
-        case ("OKP", "Ed25519"):
+        case "Ed25519":
             return try verifyEdDSA(signature: signature, data: data, jwk: jwk)
         default:
-            throw Error.unsupportedKeyType("\(jwk.kty)/\(jwk.crv)")
+            throw Error.unsupportedKeyType(algorithm)
         }
     }
 

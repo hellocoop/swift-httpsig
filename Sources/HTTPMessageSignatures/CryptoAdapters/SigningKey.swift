@@ -5,7 +5,8 @@ import Foundation
 /// Conforming types wrap platform-specific key material (CryptoKit, Secure Enclave)
 /// and expose a uniform signing interface.
 public protocol HTTPSigningKey {
-    /// The JWS algorithm identifier (e.g., "ES256", "EdDSA").
+    /// The JWS algorithm identifier, fully specified per RFC 9864
+    /// (e.g. "ES256", "Ed25519"). The polymorphic "EdDSA" MUST NOT be used.
     var algorithm: String { get }
 
     /// The public key expressed as JWK parameters.

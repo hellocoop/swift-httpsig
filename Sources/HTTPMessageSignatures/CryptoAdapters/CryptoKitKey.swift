@@ -40,7 +40,9 @@ public struct CryptoKitP256SigningKey: HTTPSigningKey {
 public struct CryptoKitCurve25519SigningKey: HTTPSigningKey {
     private let privateKey: Curve25519.Signing.PrivateKey
 
-    public var algorithm: String { "EdDSA" }
+    // Ed25519, not the polymorphic EdDSA, which RFC 9864 deprecates
+    // because it names a different algorithm depending on the key.
+    public var algorithm: String { "Ed25519" }
 
     public var publicKeyJWK: JWKParameters {
         let publicKey = privateKey.publicKey

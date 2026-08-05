@@ -31,6 +31,7 @@ final class JKTJWTSchemeTests: XCTestCase {
                 "crv": identityPublicJWK.crv,
                 "x": identityPublicJWK.x,
                 "y": identityPublicJWK.y!,
+                "alg": identityPublicJWK.alg!,
             ] as [String: Any],
         ]
 
@@ -50,6 +51,9 @@ final class JKTJWTSchemeTests: XCTestCase {
             ]
             if let y = ephemeralJWK.y {
                 cnfJwk["y"] = y
+            }
+            if let alg = ephemeralJWK.alg {
+                cnfJwk["alg"] = alg
             }
             payloadDict["cnf"] = ["jwk": cnfJwk]
         }
@@ -100,6 +104,9 @@ final class JKTJWTSchemeTests: XCTestCase {
         ]
         if let y = ephemeralJWK.y {
             cnfJwk["y"] = y
+        }
+        if let alg = ephemeralJWK.alg {
+            cnfJwk["alg"] = alg
         }
         let payloadDict: [String: Any] = [
             "iss": iss,

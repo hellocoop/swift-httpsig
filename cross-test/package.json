@@ -10,6 +10,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@hellocoop/httpsig": "^1.7.1"
+    "@hellocoop/httpsig": "^2.0.0"
   }
 }

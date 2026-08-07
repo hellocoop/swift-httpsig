@@ -51,6 +51,9 @@ async function generateP256KeyPair() {
     )
     const privateJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey)
     const publicJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey)
+    // WebCrypto does not set alg; -08 requires a fully-specified alg on every JWK
+    privateJwk.alg = 'ES256'
+    publicJwk.alg = 'ES256'
     return { privateJwk, publicJwk }
 }
 
@@ -62,13 +65,16 @@ async function generateEd25519KeyPair() {
     )
     const privateJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey)
     const publicJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey)
+    // WebCrypto sets alg: 'EdDSA' or nothing; -08 requires the fully-specified 'Ed25519'
+    privateJwk.alg = 'Ed25519'
+    publicJwk.alg = 'Ed25519'
     return { privateJwk, publicJwk }
 }
 
 async function createJktJwt({ identityPrivateJwk, identityPublicJwk, ephemeralPublicJwk }) {
     const { d, p, q, dp, dq, qi, ...cleanPubJwk } = identityPublicJwk
 
-    const alg = cleanPubJwk.kty === 'OKP' ? 'EdDSA' : 'ES256'
+    const alg = cleanPubJwk.kty === 'OKP' ? 'Ed25519' : 'ES256'
     const thumbprint = await calculateThumbprint(cleanPubJwk)
     const now = Math.floor(Date.now() / 1000)
 
@@ -89,11 +95,11 @@ async function createJktJwt({ identityPrivateJwk, identityPublicJwk, ephemeralPu
     const encodedPayload = base64urlEncode(JSON.stringify(payload))
     const signingInput = `${encodedHeader}.${encodedPayload}`
 
-    const algorithm = alg === 'EdDSA'
+    const algorithm = alg === 'Ed25519'
         ? { name: 'Ed25519' }
         : { name: 'ECDSA', hash: 'SHA-256' }
 
-    const importAlg = alg === 'EdDSA'
+    const importAlg = alg === 'Ed25519'
         ? { name: 'Ed25519' }
         : { name: 'ECDSA', namedCurve: 'P-256' }
 

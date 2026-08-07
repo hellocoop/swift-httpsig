@@ -114,6 +114,7 @@ func generate() throws {
                 "crv": identityPublicJWK.crv,
                 "x": identityPublicJWK.x,
                 "y": identityPublicJWK.y!,
+                "alg": "ES256",
             ] as [String: Any],
         ]
 
@@ -125,6 +126,7 @@ func generate() throws {
                 "kty": ephemeralKey.publicKeyJWK.kty,
                 "crv": ephemeralKey.publicKeyJWK.crv,
                 "x": ephemeralKey.publicKeyJWK.x,
+                "alg": "Ed25519",
             ]],
         ]
 
@@ -174,11 +176,12 @@ func generate() throws {
 
         let headerDict: [String: Any] = [
             "typ": "jkt-s256+jwt",
-            "alg": "EdDSA",
+            "alg": "Ed25519",
             "jwk": [
                 "kty": "OKP",
                 "crv": "Ed25519",
                 "x": identityPublicJWK.x,
+                "alg": "Ed25519",
             ],
         ]
 
@@ -192,6 +195,7 @@ func generate() throws {
                 "crv": ephJwk.crv,
                 "x": ephJwk.x,
                 "y": ephJwk.y!,
+                "alg": "ES256",
             ]],
         ]
 

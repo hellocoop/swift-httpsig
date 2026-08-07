@@ -115,7 +115,7 @@ final class HWKSchemeTests: XCTestCase {
     }
 
     func testParseJWKSURIScheme() throws {
-        let header = "sig=jwks_uri;id=\"https://issuer.example.com\";well-known=\"aauth-agent\";kid=\"key-1\""
+        let header = "sig=jwks_uri;id=\"https://issuer.example.com\";dwk=\"aauth-agent\";kid=\"key-1\""
         let (label, value) = try SignatureKeyValue.parse(header)
 
         XCTAssertEqual(label, "sig")
@@ -124,12 +124,12 @@ final class HWKSchemeTests: XCTestCase {
             return
         }
         XCTAssertEqual(jwksURI.id, "https://issuer.example.com")
-        XCTAssertEqual(jwksURI.wellKnown, "aauth-agent")
+        XCTAssertEqual(jwksURI.dwk, "aauth-agent")
         XCTAssertEqual(jwksURI.kid, "key-1")
     }
 
     func testJWKSURIDiscoveryURL() {
-        let scheme = JWKSURIScheme(id: "https://issuer.example.com", wellKnown: "aauth-agent", kid: "key-1")
+        let scheme = JWKSURIScheme(id: "https://issuer.example.com", dwk: "aauth-agent", kid: "key-1")
         let url = scheme.discoveryURL()
         XCTAssertEqual(url?.absoluteString, "https://issuer.example.com/.well-known/aauth-agent")
     }

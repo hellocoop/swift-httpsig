@@ -6,8 +6,11 @@ import Foundation
 ///
 ///     sig=jwt;jwt="eyJ..."
 ///
-/// The JWT is NOT validated by this library — only the `cnf.jwk` claim is extracted.
-/// Validation (signature check, expiration, issuer) is the caller's responsibility.
+/// The issuer's signature over the assertion is NOT checked here: the issuer's
+/// key is external and the caller resolves it. `exp` IS checked, because it
+/// bounds how long the confirmation key the assertion carries stays
+/// acceptable, and an assertion without one leaves that key acceptable
+/// indefinitely.
 public struct JWTScheme: Equatable, Sendable {
     /// The raw JWT string.
     public let jwt: String
@@ -34,9 +37,11 @@ public struct JWTScheme: Equatable, Sendable {
 
     /// Extract the JWK from the JWT's `cnf.jwk` claim.
     ///
-    /// This decodes the JWT payload (without verifying the signature) and
-    /// extracts the confirmation key.
-    public func extractJWK() throws -> JWKParameters {
+    /// This decodes the JWT payload (without verifying the issuer's
+    /// signature), validates `exp`, and extracts the confirmation key.
+    ///
+    /// - Parameter maxClockSkew: seconds of tolerance on `exp`.
+    public func extractJWK(maxClockSkew: Int = 60) throws -> JWKParameters {
         let parts = jwt.split(separator: ".")
         guard parts.count >= 2 else {
             throw SignatureKeyError.invalidJWT("expected at least 2 parts separated by '.'")
@@ -49,6 +54,16 @@ public struct JWTScheme: Equatable, Sendable {
         // Parse the payload JSON
         guard let payload = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any] else {
             throw SignatureKeyError.invalidJWT("payload is not a JSON object")
+        }
+
+        // exp is REQUIRED as of -08: it is what bounds acceptance of the
+        // confirmation key this assertion carries.
+        guard let exp = payload["exp"] as? Int else {
+            throw SignatureKeyError.invalidJWT("missing 'exp' claim")
+        }
+        let now = Int(Date().timeIntervalSince1970)
+        if exp + maxClockSkew < now {
+            throw SignatureKeyError.expiredJWT("exp \(exp) is in the past")
         }
 
         guard let cnf = payload["cnf"] as? [String: Any] else {

@@ -7,12 +7,17 @@ import Foundation
 ///
 /// - `hwk`: inline JWK parameters
 /// - `jwt`: JWT with `cnf.jwk` confirmation key
-/// - `jwks_uri`: JWKS discovery URI
+/// - `jkt-jwt`: self-issued key delegation JWT
+/// - `jwks_uri`: metadata discovery, then a JWKS
+/// - `jwks`: a direct JWKS fetch, the URL being both identity and key location
+/// - `self-jwt`: a self-issued JWT whose signing key is its confirmation key
 public enum SignatureKeyValue: Equatable, Sendable {
     case hwk(HWKScheme)
     case jwt(JWTScheme)
     case jktJWT(JKTJWTScheme)
     case jwksURI(JWKSURIScheme)
+    case jwks(JWKSScheme)
+    case selfJWT(SelfJWTScheme)
 
     /// Parse a Signature-Key header value string.
     ///
@@ -48,6 +53,12 @@ public enum SignatureKeyValue: Equatable, Sendable {
         case "jwks_uri":
             let jwksURI = try JWKSURIScheme.parse(params: paramsString)
             return (label, .jwksURI(jwksURI))
+        case "jwks":
+            let jwks = try JWKSScheme.parse(params: paramsString)
+            return (label, .jwks(jwks))
+        case "self-jwt":
+            let selfJWT = try SelfJWTScheme.parse(params: paramsString)
+            return (label, .selfJWT(selfJWT))
         default:
             throw SignatureKeyError.unknownScheme(scheme)
         }
@@ -64,13 +75,18 @@ public enum SignatureKeyValue: Equatable, Sendable {
             return "\(label)=\(jktJWT.serialize())"
         case .jwksURI(let jwksURI):
             return "\(label)=\(jwksURI.serialize())"
+        case .jwks(let jwks):
+            return "\(label)=\(jwks.serialize())"
+        case .selfJWT(let selfJWT):
+            return "\(label)=\(selfJWT.serialize())"
         }
     }
 
     /// Extract the JWK parameters from this Signature-Key value, if available inline.
     ///
-    /// Returns the JWK for `hwk` and `jwt` schemes. Returns nil for `jwks_uri`
-    /// (which requires network resolution).
+    /// Returns the JWK for the schemes that carry one inline. Returns nil for
+    /// jwks_uri, jwks and self-jwt, which resolve their key over the network:
+    /// the caller fetches, then verifies with the resolved key.
     public func jwkParameters() throws -> JWKParameters? {
         switch self {
         case .hwk(let hwk):
@@ -79,7 +95,7 @@ public enum SignatureKeyValue: Equatable, Sendable {
             return try jwt.extractJWK()
         case .jktJWT(let jktJWT):
             return try jktJWT.extractJWK()
-        case .jwksURI:
+        case .jwksURI, .jwks, .selfJWT:
             return nil
         }
     }
@@ -91,4 +107,13 @@ public enum SignatureKeyError: Error, Equatable {
     case unknownScheme(String)
     case missingParameter(String)
     case invalidJWT(String)
+    /// The assertion is well formed but has expired.
+    case expiredJWT(String)
+    /// A parameter this document forbids was present.
+    case forbiddenParameter(String)
+    /// A discovery metadata document has no issuer member.
+    case issuerMissing(String)
+    /// A metadata document's issuer does not match the identity it was
+    /// fetched under.
+    case issuerMismatch(expected: String, found: String)
 }

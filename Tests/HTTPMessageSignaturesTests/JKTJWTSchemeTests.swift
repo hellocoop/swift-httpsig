@@ -88,11 +88,12 @@ final class JKTJWTSchemeTests: XCTestCase {
 
         let headerDict: [String: Any] = [
             "typ": "jkt-s256+jwt",
-            "alg": "EdDSA",
+            "alg": "Ed25519",
             "jwk": [
                 "kty": "OKP",
                 "crv": "Ed25519",
                 "x": identityPublicJWK.x,
+                "alg": "Ed25519",
             ],
         ]
 

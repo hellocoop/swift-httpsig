@@ -41,8 +41,13 @@ public struct HTTPMessageSigner {
         case jwt(String)
         /// Self-issued key delegation JWT (caller provides the JWT string).
         case jktJWT(String)
-        /// JWKS URI discovery (caller provides the URI parameters).
-        case jwksURI(id: String, wellKnown: String?, kid: String?)
+        /// JWKS URI discovery. All three parameters are REQUIRED as of -08.
+        case jwksURI(id: String, dwk: String, kid: String)
+        /// Direct JWKS fetch; the URL is both identity and key location.
+        case jwks(url: String, kid: String)
+        /// Self-issued JWT, whose signing key is its confirmation key
+        /// (caller provides the JWT string).
+        case selfJWT(String)
     }
 
     public init(
@@ -121,8 +126,12 @@ public struct HTTPMessageSigner {
             return .jwt(JWTScheme(jwt: jwtString))
         case .jktJWT(let jwtString):
             return .jktJWT(JKTJWTScheme(jwt: jwtString))
-        case .jwksURI(let id, let wellKnown, let kid):
-            return .jwksURI(JWKSURIScheme(id: id, wellKnown: wellKnown, kid: kid))
+        case .jwksURI(let id, let dwk, let kid):
+            return .jwksURI(JWKSURIScheme(id: id, dwk: dwk, kid: kid))
+        case .jwks(let url, let kid):
+            return .jwks(JWKSScheme(url: url, kid: kid))
+        case .selfJWT(let jwtString):
+            return .selfJWT(SelfJWTScheme(jwt: jwtString))
         }
     }
 }

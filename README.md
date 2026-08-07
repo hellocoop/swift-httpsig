@@ -2,6 +2,33 @@
 
 Swift implementation of [RFC 9421 HTTP Message Signatures](https://www.rfc-editor.org/rfc/rfc9421) with the [Signature-Key header extension](https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key/).
 
+Tracks **draft-hardt-httpbis-signature-key-08**.
+
+| Line | Implements |
+| ---- | ---------- |
+| `2.x` | `-08` |
+| `1.x` | `-05` era, plus `alg` emission in `1.2.0` |
+
+`-08` is not wire compatible with earlier revisions in either direction, and the
+protocol has no version negotiation, so both ends of a deployment move together.
+See [MIGRATING-2.0.md](./MIGRATING-2.0.md).
+
+### Schemes
+
+| Scheme | Status |
+| ------ | ------ |
+| `hwk` | full |
+| `jkt-jwt` | full |
+| `jwt` | assertion claims and `cnf.jwk`; the issuer's signature is the caller's to check |
+| `jwks_uri` | parameters, discovery URL, and metadata `issuer` validation; the fetch is the caller's |
+| `jwks` | parameters and URL; the fetch is the caller's |
+| `self-jwt` | claims and JWT signature verification; the fetch is the caller's |
+| `x509` | not implemented |
+
+This library performs no network I/O. Discovery schemes parse and expose what is
+needed, and validate what comes back; the caller owns the fetch and its egress
+admission.
+
 ## Requirements
 
 - iOS 17.4+ / macOS 14+
@@ -14,7 +41,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/hellocoop/swift-httpsig.git", from: "0.1.0"),
+    .package(url: "https://github.com/hellocoop/swift-httpsig.git", from: "2.0.0"),
 ],
 targets: [
     .target(

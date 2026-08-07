@@ -7,11 +7,12 @@ import Foundation
 /// is not derived from `kty` and `crv`, which underdetermine it for RSA keys
 /// -- no curve, and both padding and hash free -- and for the `AKP` key type.
 ///
-/// This release still accepts a JWK with no `alg` and derives the algorithm
-/// from `kty` and `crv`, which is unambiguous for the OKP and EC keys this
-/// library supports. That leniency exists so a 1.2 verifier keeps accepting
-/// signers that have not been updated yet; a future major version will require
-/// the member.
+/// The member is REQUIRED as of 2.0. A JWK without one is rejected rather than
+/// having its algorithm derived: `kty` and `crv` do determine it for the OKP
+/// and EC keys supported here, but not for RSA, which has no curve and leaves
+/// both padding and hash free, nor for `AKP`, which covers several ML-DSA
+/// parameter sets. Requiring it uniformly keeps one code path and lets
+/// `Accept-Signature-Alg` be compared against a key by string equality.
 public enum AlgorithmDetermination {
     public enum Error: Swift.Error, Equatable {
         /// The `alg` names a different algorithm depending on the key it is
@@ -21,8 +22,8 @@ public enum AlgorithmDetermination {
         case unsupportedAlgorithm(String)
         /// The `alg` disagrees with `kty` or `crv`.
         case inconsistentKey(alg: String, detail: String)
-        /// Neither `alg` nor a recognized `kty`/`crv` pair was present.
-        case undeterminedAlgorithm(kty: String, crv: String)
+        /// The JWK has no `alg`. Required as of -08.
+        case missingAlgorithm(kty: String, crv: String)
         /// A shared secret cannot prove possession to a verifier holding it.
         case symmetricAlgorithm(String)
     }
@@ -55,12 +56,7 @@ public enum AlgorithmDetermination {
     /// - Returns: a fully-specified JOSE algorithm identifier.
     public static func determine(_ jwk: JWKParameters) throws -> String {
         guard let alg = jwk.alg, !alg.isEmpty else {
-            // No alg: derive it, which this library can do unambiguously for
-            // the key types it supports.
-            guard let derivedAlg = derived(kty: jwk.kty, crv: jwk.crv) else {
-                throw Error.undeterminedAlgorithm(kty: jwk.kty, crv: jwk.crv)
-            }
-            return derivedAlg
+            throw Error.missingAlgorithm(kty: jwk.kty, crv: jwk.crv)
         }
 
         if symmetric.contains(alg) {

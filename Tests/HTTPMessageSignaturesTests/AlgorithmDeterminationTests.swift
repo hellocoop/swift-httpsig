@@ -19,24 +19,23 @@ final class AlgorithmDeterminationTests: XCTestCase {
 
     // MARK: - alg absent
 
-    func testDerivesWhenAlgAbsent() throws {
-        // Leniency retained for 1.x: kty and crv name exactly one algorithm
-        // for the key types supported here, so a signer that has not been
-        // updated is still readable.
-        let ec = JWKParameters(kty: "EC", crv: "P-256", x: "x", y: "y")
-        XCTAssertEqual(try AlgorithmDetermination.determine(ec), "ES256")
-
-        let okp = JWKParameters(kty: "OKP", crv: "Ed25519", x: "x")
-        XCTAssertEqual(try AlgorithmDetermination.determine(okp), "Ed25519")
-    }
-
-    func testRejectsWhenNeitherAlgNorKnownCurve() {
-        let jwk = JWKParameters(kty: "OKP", crv: "X25519", x: "x")
+    func testRejectsWhenAlgAbsent() {
+        // Required as of 2.0. kty and crv do determine the algorithm for OKP
+        // and EC, but requiring it uniformly keeps one code path and lets
+        // Accept-Signature-Alg be compared against a key by string equality.
+        let jwk = JWKParameters(kty: "EC", crv: "P-256", x: "x", y: "y")
         XCTAssertThrowsError(try AlgorithmDetermination.determine(jwk)) { error in
             XCTAssertEqual(
                 error as? AlgorithmDetermination.Error,
-                .undeterminedAlgorithm(kty: "OKP", crv: "X25519"))
+                .missingAlgorithm(kty: "EC", crv: "P-256"))
         }
+    }
+
+    func testDerivedStillBacksTheFactories() {
+        // Derivation survives as the source the ec()/okp() factories use to
+        // populate alg; it is no longer a fallback on the verify path.
+        XCTAssertEqual(AlgorithmDetermination.derived(kty: "OKP", crv: "Ed25519"), "Ed25519")
+        XCTAssertNil(AlgorithmDetermination.derived(kty: "OKP", crv: "X25519"))
     }
 
     // MARK: - forbidden identifiers

@@ -55,6 +55,12 @@ public struct HWKScheme: Equatable, Sendable {
             throw SignatureKeyError.missingParameter("x")
         }
 
+        // The key is inline, so an identifier selects nothing and one that
+        // disagrees with the inline key has no defined resolution.
+        if dict["kid"] != nil {
+            throw SignatureKeyError.forbiddenParameter("kid")
+        }
+
         let y = dict["y"]
 
         // Validate: EC requires y, OKP does not
